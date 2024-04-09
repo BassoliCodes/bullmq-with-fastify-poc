@@ -1,5 +1,6 @@
 import { BullQueue } from '../shared/bull/implementation/BullMQ';
 import { container } from 'tsyringe';
+import { IQueue } from '../shared/bull/interface/IQueue';
 
 interface IJobPayload {
   name: string;
@@ -10,9 +11,7 @@ interface IJobPayload {
 
 export class AddJobController {
   async handle() {
-    console.log('AddJobController');
-
-    const bull = container.resolve(BullQueue);
+    const bull = container.resolve<IQueue>(BullQueue);
 
     const payload: IJobPayload = {
       name: 'Lucca Bassoli',

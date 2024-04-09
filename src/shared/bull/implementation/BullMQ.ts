@@ -1,67 +1,69 @@
 import { Queue, Worker } from 'bullmq';
-
 import { IQueue } from '../interface/IQueue';
 import { queueOptions } from '../interface/IQueueOptions';
 import { queueList } from '../processors';
 import { redisConfig } from '../../../config/redis';
 
+interface IJobData {
+  id: string;
+}
+
 export class BullQueue implements IQueue {
-  public queues: Queue[] = [];
-  private workers: Worker[] = [];
+  private queues: Map<string, Queue> = new Map();
+  private workers: Map<string, Worker> = new Map();
 
   constructor() {
     console.info('[Bull] Initializing...');
 
-    const useCaseDefaultQueue = new Queue('UseCaseDefaultQueue', queueOptions);
-
-    console.info(`[Bull] Queue ${useCaseDefaultQueue.name} created`);
-
-    this.queues.push(useCaseDefaultQueue);
-
     queueList.forEach(({ key, processor }) => {
-      const foundQueue = this.queues.find(queue => queue.name === key);
-
-      if (!foundQueue) {
+      if (!this.queues.has(key)) {
         const bullQueue = new Queue(key, queueOptions);
-        const foundWorker = this.workers.find(worker => worker.name === key);
+        this.queues.set(key, bullQueue);
 
-        if (!foundWorker) {
-          this.workers.push(
-            new Worker(
-              key,
-              async job => {
-                await processor.handle(job.data);
-              },
-              { connection: redisConfig },
-            ),
-          );
-        }
+        const worker = new Worker(
+          key,
+          async ({ data }) => {
+            await processor.bind()(data as IJobData);
+          },
+          {
+            connection: redisConfig,
+            concurrency: 1,
+          },
+        );
+
+        worker.on('completed', job => {
+          console.info(`[Bull] Job ${job.name} completed`);
+        });
+
+        worker.on('progress', job => {
+          console.info(`[Bull] Job ${job.name} progress: ${job.progress}%`);
+        });
+
+        worker.on('error', err => {
+          console.error(`[Bull] Error: ${err.message}`);
+        });
+
+        worker.on('failed', job => {
+          console.info(`[Bull] Job ${job?.name} failed`);
+        });
+
+        this.workers.set(key, worker);
 
         console.info(`[Bull] Queue ${bullQueue.name} created`);
-
-        bullQueue.addListener('completed', job => {
-          console.info(`[Bull] Job ${job.id} completed`);
-        });
-
-        bullQueue.addListener('failed', job => {
-          console.info(`[Bull] Job ${job.id} failed`);
-        });
-
-        this.queues.push(bullQueue);
       }
     });
   }
 
   public getQueues() {
-    return this.queues;
+    return Array.from(this.queues.values());
   }
 
   public getWorkers() {
-    return this.workers;
+    return Array.from(this.workers.values());
   }
 
   public addToQueue<T>(queueName: string, data: T) {
-    const foundQueue = this.queues.find(queue => queue.name === queueName);
+    const foundQueue = this.queues.get(queueName);
 
     if (!foundQueue) {
       throw new Error(`[Bull] Queue ${queueName} not found`);

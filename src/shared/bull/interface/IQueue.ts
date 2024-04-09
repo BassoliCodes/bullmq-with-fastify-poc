@@ -1,7 +1,7 @@
 import { Queue, Worker } from "bullmq";
 
 export interface IQueue {
-  addToQueue(queueName: string, data: { id: string }): void;
+  addToQueue<T>(queueName: string, data: T): void;
   getQueues(): Queue[];
   getWorkers(): Worker[];
 }
