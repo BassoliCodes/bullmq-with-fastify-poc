@@ -60,15 +60,15 @@ export class BullQueue implements IQueue {
     return this.workers;
   }
 
-  public addToQueue(queueName: string, data: { id: string }) {
+  public addToQueue<T>(queueName: string, data: T) {
     const foundQueue = this.queues.find(queue => queue.name === queueName);
 
     if (!foundQueue) {
       throw new Error(`[Bull] Queue ${queueName} not found`);
     }
 
-    foundQueue.add(queueName, { jobId: data.id });
+    foundQueue.add(queueName, data as T);
 
-    console.info(`[Bull] Job ${data.id} added to queue ${queueName}`);
+    console.info(`[Bull] Job added to queue ${queueName}`);
   }
 }

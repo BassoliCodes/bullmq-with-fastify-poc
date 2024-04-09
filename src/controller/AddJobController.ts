@@ -1,6 +1,12 @@
-import { BullQueue } from "../shared/bull/implementation/BullMQ";
-import { container } from "tsyringe";
+import { BullQueue } from '../shared/bull/implementation/BullMQ';
+import { container } from 'tsyringe';
 
+interface IJobPayload {
+  name: string;
+  age: number;
+  programmer: boolean;
+  languages: string[];
+}
 
 export class AddJobController {
   async handle() {
@@ -8,6 +14,13 @@ export class AddJobController {
 
     const bull = container.resolve(BullQueue);
 
-    bull.addToQueue('ConsoleJob', { id: '1' });
+    const payload: IJobPayload = {
+      name: 'Lucca Bassoli',
+      age: 21,
+      programmer: true,
+      languages: ['Javascript', 'Typescript'],
+    };
+
+    bull.addToQueue<IJobPayload>('ConsoleJob', payload);
   }
 }
