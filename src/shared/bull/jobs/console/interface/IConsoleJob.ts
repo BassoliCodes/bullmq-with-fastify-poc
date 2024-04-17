@@ -1,3 +1,5 @@
+import { Job } from "bullmq";
+
 export interface IConsoleJob {
-  handle(data: unknown): Promise<void>;
+  handle(job: Job): Promise<void>;
 }

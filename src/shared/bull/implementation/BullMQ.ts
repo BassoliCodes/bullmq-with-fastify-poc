@@ -22,8 +22,8 @@ export class BullQueue implements IQueue {
 
         const worker = new Worker(
           key,
-          async ({ data }) => {
-            await processor.bind()(data as IJobData);
+          async (job) => {
+            await processor(job);
           },
           {
             connection: redisConfig,

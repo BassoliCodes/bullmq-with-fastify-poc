@@ -1,11 +1,14 @@
 import { container } from "tsyringe";
 import { ConsoleJob } from "../jobs/console";
+import { Job } from "bullmq";
+
+type TProcessor = (job: Job) => Promise<void>;
 
 interface IQueueList {
   key: string;
   processorName: string;
   processorDescription?: string;
-  processor: any;
+  processor: TProcessor;
 }
 
 
